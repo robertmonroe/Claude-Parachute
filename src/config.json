@@ -1,1 +1,1 @@
-{ "threshold": 70 }
+{ "threshold": 70, "maxTokens": 200000 }

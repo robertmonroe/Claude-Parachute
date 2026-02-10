@@ -22,12 +22,14 @@ process.stdin.on("end", () => {
   const totalOutput = ctx.total_output_tokens || 0;
   const ctxSize = ctx.context_window_size || 0;
 
-  // Read parachute threshold
+  // Read parachute config
   let threshold = 70;
+  let maxTokens = 0;
   try {
     const configPath = path.join(process.env.USERPROFILE || process.env.HOME, ".claude", "parachute", "config.json");
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     if (config.threshold >= 30 && config.threshold <= 95) threshold = config.threshold;
+    if (config.maxTokens > 0) maxTokens = config.maxTokens;
   } catch {}
 
   // Shorten directory to last 2 components
@@ -77,10 +79,17 @@ process.stdin.on("end", () => {
   const used = totalInput + totalOutput;
   const tokenStr = ctxSize ? `${fmtTokens(used)}/${fmtTokens(ctxSize)}` : `${fmtTokens(used)}`;
 
-  // EJECT warning when context exceeds parachute threshold
+  // Two triggers, one alarm:
+  //   Context overflow — quality degrades (percentage threshold)
+  //   Token truncation — content physically cut off (absolute token limit)
+  const ctxTriggered = usedPct >= threshold;
+  const tokTriggered = maxTokens > 0 && used >= maxTokens;
+
   let ctxDisplay;
-  if (usedPct >= threshold) {
-    ctxDisplay = `${blink}${boldRed}[EJECT! ${usedPct}% ${tokenStr}]${reset}`;
+  if (tokTriggered) {
+    ctxDisplay = `${blink}${boldRed}[EJECT:tokens ${tokenStr}]${reset}`;
+  } else if (ctxTriggered) {
+    ctxDisplay = `${blink}${boldRed}[EJECT:ctx ${usedPct}% ${tokenStr}]${reset}`;
   } else {
     const ctxColor = usedPct >= 75 ? "31" : usedPct >= 50 ? "33" : "32";
     ctxDisplay = `\x1b[${ctxColor}m[${usedPct}% ${tokenStr}]${reset}`;

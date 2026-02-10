@@ -16,7 +16,9 @@ You MUST do all of the following steps:
    - **Branch**: Current git branch if applicable
    - **Important context**: Any other critical information needed to continue (API keys locations, architecture decisions, patterns established, etc.)
 
-2. **Write the resume file** to `C:/Users/3dmax/.claude/parachute/RESUME.md` with this structure:
+2. **Rotate existing resume** — Before writing, check if `C:/Users/3dmax/.claude/parachute/RESUME.md` already exists. If it does, copy it to `C:/Users/3dmax/.claude/parachute/RESUME-{YYYY-MM-DD-HHmmss}.md` (using the current timestamp) so previous state isn't lost.
+
+3. **Write the resume file** to `C:/Users/3dmax/.claude/parachute/RESUME.md` with this structure:
 
 ```
 # Parachute Resume — [TIMESTAMP]
@@ -54,7 +56,7 @@ You MUST do all of the following steps:
 [Any other critical context needed to resume work]
 ```
 
-3. **Confirm to the user**:
+4. **Confirm to the user**:
    > Parachute deployed! Session state saved to `RESUME.md`.
    >
    > To continue in a fresh chat, say **"resume"** or run `/parachute:resume`.
