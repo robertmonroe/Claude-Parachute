@@ -8,9 +8,9 @@ Show current parachute configuration and resume state.
    - **threshold**: context percentage trigger (default 70%)
    - **maxTokens**: absolute token limit trigger (default 200000, or 0 = disabled)
 
-2. **Check** if `C:/Users/3dmax/.claude/parachute/RESUME.md` exists.
+2. **Check** if `.parachute/RESUME.md` exists in the current working directory.
    - If yes: report that a resume file exists, show its timestamp (from the first heading line), and show the Goal section.
-   - If no: report "No saved session to resume."
+   - If no: report "No saved session in this project."
 
 3. **Show** a brief summary like:
    > **Parachute Status**

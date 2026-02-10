@@ -4,8 +4,8 @@ Restore context from a previous session that was saved with `/parachute`.
 
 ## Instructions
 
-1. **Read** the resume file at `C:/Users/3dmax/.claude/parachute/RESUME.md`.
-   - If it doesn't exist, tell the user: "No resume file found. Run `/parachute` in a session to save state first."
+1. **Read** the resume file at `.parachute/RESUME.md` in the current working directory.
+   - If it doesn't exist, tell the user: "No resume file found in this project. Run `/parachute` in a session to save state first."
 
 2. **Present** the saved session state to the user in a clear summary.
 
@@ -14,4 +14,4 @@ Restore context from a previous session that was saved with `/parachute`.
    - Continue with a specific remaining task
    - Adjust the plan before continuing
 
-4. **Restore context**: Navigate to the working directory, check the git branch, review the mentioned files, and begin assisting with the chosen task.
+4. **Restore context**: Check the git branch, review the mentioned files, and begin assisting with the chosen task.

@@ -1,4 +1,3 @@
-const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,45 +38,35 @@ process.stdin.on("end", () => {
     shortCwd = parts.length <= 2 ? parts.join("/") : parts.slice(-2).join("/");
   }
 
-  // Git branch and dirty status
-  let gitInfo = "";
-  if (cwd) {
-    try {
-      const branch = execSync("git symbolic-ref --short HEAD 2>nul || git rev-parse --short HEAD 2>nul", {
-        cwd,
-        encoding: "utf8",
-        timeout: 3000,
-        stdio: ["pipe", "pipe", "pipe"],
-      }).trim();
-      if (branch) {
-        let dirty = "";
-        try {
-          execSync("git diff --quiet 2>nul && git diff --cached --quiet 2>nul", {
-            cwd,
-            encoding: "utf8",
-            timeout: 3000,
-            stdio: ["pipe", "pipe", "pipe"],
-          });
-        } catch {
-          dirty = "*";
-        }
-        gitInfo = ` (${branch}${dirty})`;
-      }
-    } catch {}
-  }
-
   // Format token count (e.g., 45.2k / 200k)
   const fmtTokens = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
 
   const green = "\x1b[32m";
   const yellow = "\x1b[33m";
-  const cyan = "\x1b[36m";
   const reset = "\x1b[0m";
   const boldRed = "\x1b[1;31m";
   const blink = "\x1b[5m";
+  const dim = "\x1b[2m";
 
   const used = totalInput + totalOutput;
-  const tokenStr = ctxSize ? `${fmtTokens(used)}/${fmtTokens(ctxSize)}` : `${fmtTokens(used)}`;
+
+  // Build a bar: █ filled, ░ empty, 10 chars wide
+  const mkBar = (pct) => {
+    const w = 10;
+    const f = Math.round((Math.min(pct, 100) / 100) * w);
+    return "\u2588".repeat(f) + "\u2591".repeat(w - f);
+  };
+
+  // Context bar — percentage of context window used
+  const ctxBar = mkBar(usedPct);
+  const ctxColor = usedPct >= 75 ? "31" : usedPct >= 50 ? "33" : "32";
+
+  // Token bar — absolute tokens vs limit (maxTokens or ctxSize as fallback)
+  const tokLimit = maxTokens > 0 ? maxTokens : ctxSize;
+  const tokPct = tokLimit > 0 ? Math.round((used / tokLimit) * 100) : 0;
+  const tokBar = mkBar(tokPct);
+  const tokColor = tokPct >= 90 ? "31" : tokPct >= 70 ? "33" : "32";
+  const tokLabel = `${fmtTokens(used)}/${fmtTokens(tokLimit)}`;
 
   // Two triggers, one alarm:
   //   Context overflow — quality degrades (percentage threshold)
@@ -85,17 +74,16 @@ process.stdin.on("end", () => {
   const ctxTriggered = usedPct >= threshold;
   const tokTriggered = maxTokens > 0 && used >= maxTokens;
 
-  let ctxDisplay;
+  let display;
   if (tokTriggered) {
-    ctxDisplay = `${blink}${boldRed}[EJECT:tokens ${tokenStr}]${reset}`;
+    display = `${blink}${boldRed}EJECT:tokens ${tokBar} ${tokLabel}${reset}  Context ${ctxBar} ${usedPct}%`;
   } else if (ctxTriggered) {
-    ctxDisplay = `${blink}${boldRed}[EJECT:ctx ${usedPct}% ${tokenStr}]${reset}`;
+    display = `${blink}${boldRed}EJECT:ctx ${ctxBar} ${usedPct}%${reset}  Tokens ${tokBar} ${tokLabel}`;
   } else {
-    const ctxColor = usedPct >= 75 ? "31" : usedPct >= 50 ? "33" : "32";
-    ctxDisplay = `\x1b[${ctxColor}m[${usedPct}% ${tokenStr}]${reset}`;
+    display = `Context \x1b[${ctxColor}m${ctxBar}${reset} ${usedPct}%  Tokens \x1b[${tokColor}m${tokBar}${reset} ${tokLabel}`;
   }
 
   process.stdout.write(
-    `${green}${model}${reset} ${yellow}${shortCwd}${reset}${cyan}${gitInfo}${reset} ${ctxDisplay}`
+    `${green}${model}${reset} ${yellow}${shortCwd}${reset} ${display}`
   );
 });

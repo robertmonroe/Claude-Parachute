@@ -44,10 +44,15 @@ Gathers from the current conversation:
 - Blockers and open questions
 - Working directory and git branch
 
-Writes everything to `~/.claude/parachute/RESUME.md`.
+Writes everything to `.parachute/RESUME.md` in the current project directory. Previous resumes are rotated to timestamped archives before overwriting.
 
 ### Resume (`/parachute:resume`)
-Reads RESUME.md, presents the summary, asks what to continue with, and picks up work.
+Reads `.parachute/RESUME.md` from the current project, presents the summary, asks what to continue with, and picks up work.
+
+### Per-Project State
+Resume files live in the project, not globally. This means:
+- **Multiple projects** — parachute from Project A, switch to Project B, parachute that, come back to A. Each project keeps its own state.
+- **Developer handoff** — commit the `.parachute/` folder and another developer with Parachute installed can run `/parachute:resume` to pick up exactly where you left off.
 
 ## Configuration
 

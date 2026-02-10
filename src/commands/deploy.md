@@ -1,6 +1,8 @@
 # Parachute Deploy
 
-Save full session state so the user can resume seamlessly in a fresh chat.
+Save full session state so anyone can resume seamlessly in a fresh chat.
+
+State is saved to `.parachute/RESUME.md` in the current working directory — per-project, shareable, and committable.
 
 ## Instructions
 
@@ -16,9 +18,9 @@ You MUST do all of the following steps:
    - **Branch**: Current git branch if applicable
    - **Important context**: Any other critical information needed to continue (API keys locations, architecture decisions, patterns established, etc.)
 
-2. **Rotate existing resume** — Before writing, check if `C:/Users/3dmax/.claude/parachute/RESUME.md` already exists. If it does, copy it to `C:/Users/3dmax/.claude/parachute/RESUME-{YYYY-MM-DD-HHmmss}.md` (using the current timestamp) so previous state isn't lost.
+2. **Rotate existing resume** — Before writing, check if `.parachute/RESUME.md` already exists in the current working directory. If it does, copy it to `.parachute/RESUME-{YYYY-MM-DD-HHmmss}.md` (using the current timestamp) so previous state isn't lost.
 
-3. **Write the resume file** to `C:/Users/3dmax/.claude/parachute/RESUME.md` with this structure:
+3. **Write the resume file** — Create the `.parachute/` directory if needed, then write `.parachute/RESUME.md` in the current working directory with this structure:
 
 ```
 # Parachute Resume — [TIMESTAMP]
@@ -57,6 +59,7 @@ You MUST do all of the following steps:
 ```
 
 4. **Confirm to the user**:
-   > Parachute deployed! Session state saved to `RESUME.md`.
+   > Parachute deployed! Session state saved to `.parachute/RESUME.md`.
    >
    > To continue in a fresh chat, say **"resume"** or run `/parachute:resume`.
+   > To hand off to another developer, commit the `.parachute/` folder.
