@@ -1,4 +1,4 @@
-# Claude Parachute
+# Claude Code Parachute
 
 ![Claude Code Parachute — Deploy Before You Crash](images/claude-code-parachute.jpg)
 
