@@ -1,5 +1,7 @@
 # Claude Parachute
 
+![Claude Code Parachute — Deploy Before You Crash](images/claude-code-parachute.jpg)
+
 Context overflow and token truncation destroy your sessions. Parachute watches for both.
 
 ## The Problem
