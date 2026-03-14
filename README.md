@@ -2,18 +2,17 @@
 
 ![Claude Code Parachute — Deploy Before You Crash](images/claude-code-parachute.jpg)
 
-Context overflow and token truncation destroy your sessions. Parachute watches for both.
+Context overflow destroys your sessions. Parachute watches and warns you before it's too late.
 
 ## The Problem
 
-Long Claude Code sessions fail in two ways:
-- **Context overflow** — quality degrades gradually as the context window fills. Claude gets dumb, starts forgetting what it's doing. By the time you notice, you've already lost coherent context.
-- **Token truncation** — the window physically cuts off. Content disappears. No warning, no graceful degradation. Just gone.
+Long Claude Code sessions fail when the context window fills up — quality degrades gradually as Claude gets dumb, starts forgetting what it's doing. By the time you notice, you've already lost coherent context.
 
 ## The Solution
 
 Parachute gives you:
-- **Visual warning** — statusline flashes bold red when either trigger fires. `[EJECT:ctx 75%]` for context overflow, `[EJECT:tokens 180k/200k]` for token limit. You know what hit you.
+- **Visual warning** — statusline flashes bold red `[EJECT:ctx 75%]` when context usage exceeds your threshold
+- **Dynamic token display** — always shows actual tokens used vs the model's real context window (works with 200k, 1M, or any future size)
 - **One-command save** — `/parachute` captures your full session state (goal, decisions, files changed, progress, blockers)
 - **Seamless resume** — `/parachute:resume` in a fresh chat restores everything
 
@@ -24,18 +23,16 @@ Parachute gives you:
 | `/parachute` | Deploy — save session state and get resume instructions |
 | `/parachute:resume` | Resume — restore context from last saved session |
 | `/parachute:set <N>` | Set context threshold (30-95%, default 70%) |
-| `/parachute:set maxTokens <N>` | Set token limit (default 200000, 0 to disable) |
 | `/parachute:status` | Show current threshold and whether a resume file exists |
 
 ## How It Works
 
 ### Statusline
-The statusline (`~/.claude/statusline.js`) reads config and watches two triggers:
-- **Below both limits**: normal green/yellow/red context indicator
-- **Context threshold hit**: `[EJECT:ctx 75% 150k/200k]` — quality is degrading
-- **Token limit hit**: `[EJECT:tokens 180k/200k]` — content is being cut off
+The statusline (`~/.claude/statusline.js`) reads your threshold config and the model's actual context window size:
+- **Below threshold**: normal green/yellow/red dual progress bars — `Context ████░░░░ 35%  Tokens ██░░░░░░ 24k/1M`
+- **Threshold hit**: `[EJECT:ctx 75%]` — bold red blink warning, time to deploy
 
-Token limit takes priority in the display since it's the more dangerous failure mode.
+The token limit is always the real `context_window_size` reported by Claude Code — no hardcoded values. Switch between 200k and 1M models and the display adapts automatically.
 
 ### Deploy (`/parachute`)
 Gathers from the current conversation:
@@ -58,15 +55,16 @@ Resume files live in the project, not globally. This means:
 
 ## Configuration
 
-Both triggers are stored in `~/.claude/parachute/config.json`:
+Stored in `~/.claude/parachute/config.json`:
 ```json
-{ "threshold": 70, "maxTokens": 200000 }
+{ "threshold": 70 }
 ```
 
-- **threshold** (30-95%) — context percentage at which quality starts degrading
-- **maxTokens** — absolute token count where content gets physically truncated. Set to `0` to disable.
+- **threshold** (30-95%) — context percentage at which the EJECT warning fires
 
-Change with `/parachute:set 60` or `/parachute:set maxTokens 150000`, or edit the file directly.
+Change with `/parachute:set 60` or edit the file directly.
+
+The token limit is detected automatically from the model's context window — no configuration needed.
 
 ## Installation
 
@@ -78,7 +76,7 @@ node install.js
 
 This copies files to:
 - `~/.claude/statusline.js` — context display with EJECT warning
-- `~/.claude/commands/parachute/*.md` — 4 slash commands
+- `~/.claude/commands/parachute/*.md` — slash commands
 - `~/.claude/parachute/config.json` — threshold config
 - `~/CLAUDE.md` — auto-warn instructions (appended if file already exists)
 

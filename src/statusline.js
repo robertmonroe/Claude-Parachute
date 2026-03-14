@@ -21,14 +21,12 @@ process.stdin.on("end", () => {
   const totalOutput = ctx.total_output_tokens || 0;
   const ctxSize = ctx.context_window_size || 0;
 
-  // Read parachute config
+  // Read parachute config (threshold only — token limit comes from actual context window)
   let threshold = 70;
-  let maxTokens = 0;
   try {
     const configPath = path.join(process.env.USERPROFILE || process.env.HOME, ".claude", "parachute", "config.json");
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     if (config.threshold >= 30 && config.threshold <= 95) threshold = config.threshold;
-    if (config.maxTokens > 0) maxTokens = config.maxTokens;
   } catch {}
 
   // Shorten directory to last 2 components
@@ -38,8 +36,12 @@ process.stdin.on("end", () => {
     shortCwd = parts.length <= 2 ? parts.join("/") : parts.slice(-2).join("/");
   }
 
-  // Format token count (e.g., 45.2k / 200k)
-  const fmtTokens = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
+  // Format token count (e.g., 45.2k / 200k / 1M)
+  const fmtTokens = (n) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : n % 1000000 === 0 ? 0 : 1) + "M";
+    if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k";
+    return String(n);
+  };
 
   const green = "\x1b[32m";
   const yellow = "\x1b[33m";
@@ -61,23 +63,17 @@ process.stdin.on("end", () => {
   const ctxBar = mkBar(usedPct);
   const ctxColor = usedPct >= 75 ? "31" : usedPct >= 50 ? "33" : "32";
 
-  // Token bar — absolute tokens vs limit (maxTokens or ctxSize as fallback)
-  const tokLimit = maxTokens > 0 ? maxTokens : ctxSize;
-  const tokPct = tokLimit > 0 ? Math.round((used / tokLimit) * 100) : 0;
+  // Token bar — absolute tokens vs actual context window size
+  const tokPct = ctxSize > 0 ? Math.round((used / ctxSize) * 100) : 0;
   const tokBar = mkBar(tokPct);
   const tokColor = tokPct >= 90 ? "31" : tokPct >= 70 ? "33" : "32";
-  const tokLabel = `${fmtTokens(used)}/${fmtTokens(tokLimit)}`;
+  const tokLabel = `${fmtTokens(used)}/${fmtTokens(ctxSize)}`;
 
-  // Two triggers, one alarm:
-  //   Context overflow — quality degrades (percentage threshold)
-  //   Token truncation — content physically cut off (absolute token limit)
+  // Eject trigger — context percentage exceeds threshold
   const ctxTriggered = usedPct >= threshold;
-  const tokTriggered = maxTokens > 0 && used >= maxTokens;
 
   let display;
-  if (tokTriggered) {
-    display = `${blink}${boldRed}EJECT:tokens ${tokBar} ${tokLabel}${reset}  Context ${ctxBar} ${usedPct}%`;
-  } else if (ctxTriggered) {
+  if (ctxTriggered) {
     display = `${blink}${boldRed}EJECT:ctx ${ctxBar} ${usedPct}%${reset}  Tokens ${tokBar} ${tokLabel}`;
   } else {
     display = `Context \x1b[${ctxColor}m${ctxBar}${reset} ${usedPct}%  Tokens \x1b[${tokColor}m${tokBar}${reset} ${tokLabel}`;

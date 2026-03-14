@@ -2,13 +2,15 @@
 
 Session-to-session context for working on Claude Parachute.
 
-## Current State (2026-02-10)
-- **v1.2 complete** — all components implemented, installed, and pushed to GitHub
+## Current State (2026-03-14)
+- **v1.3 complete** — removed hardcoded maxTokens, token limit now dynamic from context_window_size
 - All 4 slash commands registered and functional
-- Statusline shows dual progress bars (context % + token count) with two EJECT triggers
+- Statusline shows dual progress bars (context % + token count) with EJECT trigger on context threshold
+- Token denominator adapts automatically to model context window (200k, 1M, etc.)
+- fmtTokens updated to handle millions (displays "1M" instead of "1000k")
 - Resume files are per-project (`.parachute/RESUME.md` in working directory)
 - Existing resume files rotated to timestamped archives before overwriting
-- Install script (`install.sh`) handles setup, backs up existing statusline.js, appends to ~/CLAUDE.md
+- Install script (`install.js`) handles setup, backs up existing statusline.js, appends to ~/CLAUDE.md
 - GitHub repo: https://github.com/robertmonroe/Claude-Parachute
 
 ## Implementation Decisions
@@ -17,6 +19,13 @@ Session-to-session context for working on Claude Parachute.
 - 30% minimum: below this is too aggressive, would trigger on short sessions
 - 95% maximum: above this defeats the purpose — no time to eject
 - Default 70%: leaves ~30% headroom for the deploy command itself + user response
+
+### Dynamic token limit (v1.3)
+- Removed hardcoded `maxTokens` from config — was causing 200k to show even on 1M models
+- Token limit now always comes from `context_window.context_window_size` in Claude Code runtime data
+- Automatically adapts when switching between model tiers (200k, 1M, future sizes)
+- Simplified config to just `{ "threshold": 70 }` — one knob, not two
+- Removed EJECT:tokens trigger — context percentage threshold is sufficient
 
 ### Per-project RESUME.md with rotation (v1.2)
 - Resume files live at `{project}/.parachute/RESUME.md` — not global
@@ -28,18 +37,6 @@ Session-to-session context for working on Claude Parachute.
 - No caching mechanism needed — config file is tiny (one JSON field)
 - Means `/parachute:set` changes take effect immediately
 - Negligible performance impact (single small file read)
-
-### Dual EJECT triggers (v1.1)
-- **EJECT:ctx** — fires when `context_window.used_percentage >= threshold` (quality degradation)
-- **EJECT:tokens** — fires when `total_input + total_output >= maxTokens` (content truncation)
-- Token trigger takes priority in display (truncation is worse than degradation)
-- Config: `{ "threshold": 70, "maxTokens": 200000 }`
-- Labels which trigger fired so the user knows why
-
-### Dual progress bars (v1.2)
-- Normal display: `Context ████░░░░ 35%  Tokens ████░░░░ 70k/200k`
-- When triggered, the fired trigger shows in blink+bold red, the other bar stays visible
-- Bar colors shift green → yellow → red at different thresholds per bar
 
 ### Blink + bold red for EJECT
 - Maximum visibility — this is an urgent warning
@@ -55,7 +52,6 @@ Session-to-session context for working on Claude Parachute.
 - **Auto-deploy**: hook that auto-deploys parachute at threshold (risky — could interrupt flow)
 - **Include clipboard/selection**: capture what the user had selected
 - **Per-project thresholds**: allow config overrides per project (currently global only)
-- **Windows install script**: `install.ps1` for PowerShell users
 
 ## Known Limitations
 - ANSI blink (`\x1b[5m`) not supported in all terminals
